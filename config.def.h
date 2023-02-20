@@ -135,8 +135,8 @@ static const char *lightdcmd[]  = { "light", "-U", "5", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
-	{ ALTKEY,                       XK_p,      spawn,          {.v = roficmd } },
-	{ ALTKEY|ShiftMask,             XK_p,      spawn,          {.v = dmenucmd } },
+	{ ALTKEY|ShiftMask,                       XK_p,      spawn,          {.v = roficmd } },
+	{ ALTKEY,             XK_p,      spawn,          {.v = dmenucmd } },
 	{ ALTKEY,                       XK_Home,      spawn,		 {.v = printwcmd } },
 	{ ALTKEY|ShiftMask,             XK_Home,      spawn,		 {.v = printscmd } },
 	{ ALTKEY|ControlMask,						XK_Home,      spawn,		 {.v = printfcmd } },
