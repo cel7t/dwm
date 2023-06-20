@@ -15,12 +15,14 @@
 
 /* Other patches */
 #include "alttab.c"
-#include "cool_autostart.c"
 #include "fullscreen.c"
+#include "moveresize.c"
+#include "movestack.c"
 #include "nametag.c"
 #include "pertag.c"
 #include "swallow.c"
 #include "vanitygaps.c"
+#include "xrdb.c"
 /* Layouts */
 #include "layout_facts.c"
 #include "layout_flextile-deluxe.c"

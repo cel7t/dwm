@@ -13,7 +13,7 @@ static const int smartgaps_fact          = 1;   /* gap factor when there is only
 static const int showbar                 = 1;   /* 0 means no bar */
 static const int topbar                  = 1;   /* 0 means bottom bar */
 /* Status is to be shown on: -1 (all monitors), 0 (a specific monitor by index), 'A' (active monitor) */
-static const int statusmon               = 'A';
+static const int statusmon               = -1;
 static const unsigned int systrayspacing = 2;   /* systray spacing */
 static const int showsystray             = 1;   /* 0 means no systray */
 
@@ -39,58 +39,43 @@ static const unsigned int maxhtab          = 200;  /* tab menu height */
 static int tagindicatortype              = INDICATOR_TOP_LEFT_SQUARE;
 static int tiledindicatortype            = INDICATOR_NONE;
 static int floatindicatortype            = INDICATOR_TOP_LEFT_SQUARE;
-static const char *fonts[]          = {"Terminus:style=Bold:size=12", "Noto Color Emoji:pixelsize=16"};
-//  "M+ 1m:style=regular:size=12"
-static const char dmenufont[]       = "Terminus:style=Bold:size=12";
+static const char *fonts[]               = { "Terminus:style=Bold:size=12", "Noto Color Emoji:pixelsize=16"};
+static const char dmenufont[]            = "Terminus:style=Bold:size=12";
 
 static char c000000[]                    = "#000000"; // placeholder value
 
-
-// COLORSWAPS
-
-// #af7182 -> #dfaf6d 
-// #db\8fd9 -> #346fb1 #346fb1
-// #66\3399 -> #6a99cd
-
-static char col_fgn[] = "#fefefe";
-static char col_bgn[] = "#120f14";
-static char col_bdn[] = "#aa8ca4";
-static char col_fgs[] = "#2a2a2a";
-static char col_bgs[] = "#dfaf6d"; //#9a99e7";
-static char col_bds[] = "#6a99cd";
-
-static char normfgcolor[]                = "#bbbbbb";
-static char normbgcolor[]                = "#222222";
-static char normbordercolor[]            = "#444444";
+static char normfgcolor[]                = "#fefefe";
+static char normbgcolor[]                = "#120f14";
+static char normbordercolor[]            = "#aa7ca4";
 static char normfloatcolor[]             = "#346fb1";
 
-static char selfgcolor[]                 = "#222222"; // "#fefefe";
-static char selbgcolor[]                 = "#dfaf6d"; // "#005577";
-static char selbordercolor[]             = "#dfaf6d"; // "#005577";
-static char selfloatcolor[]              = "#dfaf6d"; // "#005577";
+static char selfgcolor[]                 = "#2a2a2a";
+static char selbgcolor[]                 = "#dfaf6d";
+static char selbordercolor[]             = "#A68972";
+static char selfloatcolor[]              = "#dfaf6d";
 
 static char titlenormfgcolor[]           = "#bbbbbb";
 static char titlenormbgcolor[]           = "#222222";
 static char titlenormbordercolor[]       = "#444444";
 static char titlenormfloatcolor[]        = "#346fb1";
 
-static char titleselfgcolor[]            = "#222222"; // "#eeeeee";
-static char titleselbgcolor[]            = "#dfaf6d"; // "#005577";
-static char titleselbordercolor[]        = "#dfaf6d"; // "#005577";
-static char titleselfloatcolor[]         = "#dfaf6d"; // "#005577";
+static char titleselfgcolor[]            = "#222222";
+static char titleselbgcolor[]            = "#dfaf6d";
+static char titleselbordercolor[]        = "#dfaf6d";
+static char titleselfloatcolor[]         = "#dfaf6d";
 
 static char tagsnormfgcolor[]            = "#bbbbbb";
 static char tagsnormbgcolor[]            = "#222222";
 static char tagsnormbordercolor[]        = "#444444";
 static char tagsnormfloatcolor[]         = "#346fb1";
 
-static char tagsselfgcolor[]             = "#222222"; // "#eeeeee";
-static char tagsselbgcolor[]             = "#dfaf6d"; // "#005577";
-static char tagsselbordercolor[]         = "#dfaf6d"; // "#005577";
-static char tagsselfloatcolor[]          = "#dfaf6d"; // "#005577";
+static char tagsselfgcolor[]             = "#222222";
+static char tagsselbgcolor[]             = "#dfaf6d";
+static char tagsselbordercolor[]         = "#dfaf6d";
+static char tagsselfloatcolor[]          = "#dfaf6d";
 
-static char hidnormfgcolor[]             = "#dfaf6d"; // "#005577";
-static char hidselfgcolor[]              = "#6a99cd"; // "#227799";
+static char hidnormfgcolor[]             = "#dfaf6d";
+static char hidselfgcolor[]              = "#6a99cd";
 static char hidnormbgcolor[]             = "#222222";
 static char hidselbgcolor[]              = "#222222";
 
@@ -100,38 +85,12 @@ static char urgbordercolor[]             = "#ff0000";
 static char urgfloatcolor[]              = "#346fb1";
 
 
-static char color0[] = "#0f0e0c";
-static char color1[] = "#8D767E";
-static char color2[] = "#525966";
-static char color3[] = "#A68972";
-static char color4[] = "#5B6474";
-static char color5[] = "#6A6A70";
-static char color6[] = "#717884";
-static char color7[] = "#fefefe";
-static char color8[] = "#2b2822";
-static char color9[] = "#c8889e";
-static char color10[] = "#5e7090";
-static char color11[] = "#e9b082";
-static char color12[] = "#687ea4";
-static char color13[] = "#7b7b9f";
-static char color14[] = "#8397bb";
-static char color15[] = "#f7fdff";
 
-
-// static const char *colors[][3]      = {
-// 	/*               fg          bg          border   */
-// 	[SchemeNorm] = { color7, 		color0,			color4 },
-// 	[SchemeSel]  = { color8,		col_bgs,		color3 },
-// };
-
-
-	// [SchemeNorm]         = { normfgcolor,      normbgcolor,      normbordercolor,      normfloatcolor },
-	// [SchemeSel]          = { selfgcolor,       selbgcolor,       selbordercolor,       selfloatcolor },
 
 static char *colors[][ColCount] = {
 	/*                       fg                bg                border                float */
-	[SchemeNorm]         = { color7,           col_bgn,           color4,               normfloatcolor },
-	[SchemeSel]          = { color8,           col_bgs,          color3,               selfloatcolor },
+	[SchemeNorm]         = { normfgcolor,      normbgcolor,      normbordercolor,      normfloatcolor },
+	[SchemeSel]          = { selfgcolor,       selbgcolor,       selbordercolor,       selfloatcolor },
 	[SchemeTitleNorm]    = { titlenormfgcolor, titlenormbgcolor, titlenormbordercolor, titlenormfloatcolor },
 	[SchemeTitleSel]     = { titleselfgcolor,  titleselbgcolor,  titleselbordercolor,  titleselfloatcolor },
 	[SchemeTagsNorm]     = { tagsnormfgcolor,  tagsnormbgcolor,  tagsnormbordercolor,  tagsnormfloatcolor },
@@ -143,20 +102,6 @@ static char *colors[][ColCount] = {
 
 
 
-static const char *const autostart[] = {
-	// "xterm", NULL,
-//	"xset -b",
-//	"if [[ $(xrandr -q | grep HDMI-A-0 | grep -v disconnected) ]]; then xrandr --output HDMI-A-0 --left-of eDP --scale 1.25x1.25 --panning 2400x1350+0+0 --output eDP --scale 1x1 --panning 1920x1080+2400+0; fi",
-//	"xsetroot -cursor_name left_ptr",
-//	"prime-run picom",
-//	"nitrogen --restore",
-//	"synclient TapButton2=0",
-//	"keymacs",
-//	"syncthing",
-//	"setroot_status",
-	// "emacs --daemon",
-	NULL /* terminate */
-};
 
 
 /* Tags
@@ -223,8 +168,6 @@ static const Rule rules[] = {
 	RULE(.wintype = WTYPE "UTILITY", .isfloating = 1)
 	RULE(.wintype = WTYPE "TOOLBAR", .isfloating = 1)
 	RULE(.wintype = WTYPE "SPLASH", .isfloating = 1)
-	// RULE(.class = "Gimp", .tags = 1 << 4)
-	// RULE(.class = "Firefox", .tags = 1 << 7)
   RULE(.class = "QJackCtl", .isfloating = 1)
   RULE(.class = "GIMP", .isfloating = 1)
   RULE(.class = "mpv", .isfloating = 1)
@@ -233,6 +176,7 @@ static const Rule rules[] = {
   RULE(.class = "URxvt", .isterminal = 1)
   RULE(.class = "XTerm", .isterminal = 1)
 };
+
 
 
 /* Bar rules allow you to configure what is shown where on the bar, as well as
@@ -308,12 +252,13 @@ static const char *dmenucmd[] = {
 	"dmenu_run",
 	"-m", dmenumon,
 	"-fn", dmenufont,
-	"-nb", col_bgn, // normbgcolor,
-	"-nf", col_fgn, // normfgcolor,
-	"-sb", col_bgs, // selbgcolor,
-	"-sf", col_fgs, // selfgcolor,
+	"-nb", normbgcolor,
+	"-nf", normfgcolor,
+	"-sb", selbgcolor,
+	"-sf", selfgcolor,
 	NULL
 };
+
 static const char *roficmd[] = { "rofi", "-show", "combi", NULL };
 static const char *jgmenucmd[] = { "jgmenu_run", NULL };
 static const char *lockcmd[] = { "betterlockscreen", "-l", NULL };
@@ -344,21 +289,22 @@ static const char *statuscmd[] = { "/bin/sh", "-c", NULL, NULL };
 
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
-	{ SUPKEY|ShiftMask,                       XK_l,          spawn,                  {.v = lockcmd } },
-	{ MODKEY|ShiftMask,                       XK_p,          spawn,                  {.v = dmenucmd } },
-	{ MODKEY|ShiftMask,                       XK_s,          spawn,                  {.v = screenshotcmd } },
-	{ SUPKEY,                       XK_p,          spawn,                  {.v = dmenucmd } },
-	{ MODKEY,             XK_p,      spawn,          {.v = roficmd } },
-	{ MODKEY|ShiftMask,             XK_Return,     spawn,                  {.v = termcmd } },
-	{ MODKEY|ControlMask,           XK_c,	   spawn,          {.v = browscmd } },
-	{ MODKEY|ControlMask,           XK_e,	   spawn,          {.v = emacscmd } },
-	{ MODKEY|ControlMask,           XK_d,	   spawn,          {.v = dolphincmd } },
-	{ 0,					0x1008ff11,	   spawn,						{.v = decvol } },
-	{ 0,					0x1008ff13,	   spawn,						{.v = incvol } },
-	{ 0,					0x1008ff12,			spawn,					{.v = mutecmd } },
-	{ 0,					0x1008ff15,			spawn,					{.v = mutecmd } },
-	{ MODKEY,			0x1008ff13,	   spawn,						{.v = lightucmd } },
-	{ MODKEY,			0x1008ff11,	   spawn,						{.v = lightdcmd } },
+
+  { SUPKEY|ShiftMask,             XK_l,          spawn,                  {.v = lockcmd } },
+  { MODKEY|ShiftMask,             XK_p,          spawn,                  {.v = dmenucmd } },
+  { MODKEY|ShiftMask,             XK_s,          spawn,                  {.v = screenshotcmd } },
+  { SUPKEY,                       XK_p,          spawn,                  {.v = dmenucmd } },
+  { MODKEY,                       XK_p,          spawn,                  {.v = roficmd } },
+  { MODKEY|ShiftMask,             XK_Return,     spawn,                  {.v = termcmd } },
+	{ MODKEY|ControlMask,           XK_c,	         spawn,                  {.v = browscmd } },
+	{ MODKEY|ControlMask,           XK_e,	         spawn,                  {.v = emacscmd } },
+	{ MODKEY|ControlMask,           XK_d,	         spawn,                  {.v = dolphincmd } },
+	{ 0,				                   0x1008ff11,	   spawn,				           {.v = decvol } },
+	{ 0,				                   0x1008ff13,	   spawn,				           {.v = incvol } },
+	{ 0,				                   0x1008ff12,		 spawn,				           {.v = mutecmd } },
+	{ 0,				                   0x1008ff15,		 spawn,				           {.v = mutecmd } },
+	{ MODKEY,		                   0x1008ff13,	   spawn,					         {.v = lightucmd } },
+	{ MODKEY,		                   0x1008ff11,	   spawn,					         {.v = lightdcmd } },
 	{ MODKEY,                       XK_b,          togglebar,              {0} },
 	{ MODKEY,                       XK_j,          focusstack,             {.i = +1 } },
 	{ MODKEY,                       XK_k,          focusstack,             {.i = -1 } },
@@ -368,7 +314,17 @@ static const Key keys[] = {
 	{ MODKEY|ControlMask,           XK_u,          incnstack,              {.i = -1 } },
 	{ MODKEY,                       XK_h,          setmfact,               {.f = -0.05} },
 	{ MODKEY,                       XK_l,          setmfact,               {.f = +0.05} },
-	// { MODKEY,                       XK_Return,     zoom,                   {0} },
+	{ MODKEY,              XK_Down,       moveresize,             {.v = "0x 25y 0w 0h" } },
+	{ MODKEY,              XK_Up,         moveresize,             {.v = "0x -25y 0w 0h" } },
+	{ MODKEY,              XK_Right,      moveresize,             {.v = "25x 0y 0w 0h" } },
+	{ MODKEY,              XK_Left,       moveresize,             {.v = "-25x 0y 0w 0h" } },
+	{ MODKEY|ShiftMask,    XK_Down,       moveresize,             {.v = "0x 0y 0w 25h" } },
+	{ MODKEY|ShiftMask,    XK_Up,         moveresize,             {.v = "0x 0y 0w -25h" } },
+	{ MODKEY|ShiftMask,    XK_Right,      moveresize,             {.v = "0x 0y 25w 0h" } },
+	{ MODKEY|ShiftMask,    XK_Left,       moveresize,             {.v = "0x 0y -25w 0h" } },
+	{ MODKEY|ShiftMask,             XK_j,          movestack,              {.i = +1 } },
+	{ MODKEY|ShiftMask,             XK_k,          movestack,              {.i = -1 } },
+	{ SUPKEY,                       XK_Return,     zoom,                   {0} },
 	{ MODKEY|Mod4Mask,              XK_u,          incrgaps,               {.i = +1 } },
 	{ MODKEY|Mod4Mask|ShiftMask,    XK_u,          incrgaps,               {.i = -1 } },
 	{ MODKEY|Mod4Mask,              XK_i,          incrigaps,              {.i = +1 } },
@@ -388,17 +344,18 @@ static const Key keys[] = {
 	{ Mod1Mask,                     XK_Tab,        alttabstart,            {0} },
 	{ MODKEY|ShiftMask,             XK_c,          killclient,             {0} },
 	{ MODKEY|ShiftMask,             XK_q,          quit,                   {0} },
+	{ MODKEY|ShiftMask,             XK_F2,         xrdb,                   {.v = NULL } },
 	{ MODKEY,                       XK_t,          setlayout,              {.v = &layouts[0]} },
 	{ MODKEY,                       XK_f,          setlayout,              {.v = &layouts[1]} },
 	{ MODKEY,                       XK_m,          setlayout,              {.v = &layouts[2]} },
 	{ MODKEY|ControlMask,           XK_t,          rotatelayoutaxis,       {.i = +1 } },   /* flextile, 1 = layout axis */
 	{ MODKEY|ControlMask,           XK_Tab,        rotatelayoutaxis,       {.i = +2 } },   /* flextile, 2 = master axis */
 	{ MODKEY|ControlMask|ShiftMask, XK_Tab,        rotatelayoutaxis,       {.i = +3 } },   /* flextile, 3 = stack axis */
-	{ MODKEY|ControlMask|Mod1Mask,  XK_Tab,        rotatelayoutaxis,       {.i = +4 } },   /* flextile, 4 = secondary stack axis */
-	{ MODKEY|Mod5Mask,              XK_t,          rotatelayoutaxis,       {.i = -1 } },   /* flextile, 1 = layout axis */
-	{ MODKEY|Mod5Mask,              XK_Tab,        rotatelayoutaxis,       {.i = -2 } },   /* flextile, 2 = master axis */
-	{ MODKEY|Mod5Mask|ShiftMask,    XK_Tab,        rotatelayoutaxis,       {.i = -3 } },   /* flextile, 3 = stack axis */
-	{ MODKEY|Mod5Mask|Mod1Mask,     XK_Tab,        rotatelayoutaxis,       {.i = -4 } },   /* flextile, 4 = secondary stack axis */
+	{ MODKEY|ControlMask|SUPKEY,  XK_Tab,        rotatelayoutaxis,       {.i = +4 } },   /* flextile, 4 = secondary stack axis */
+	{ MODKEY|SUPKEY,              XK_t,          rotatelayoutaxis,       {.i = -1 } },   /* flextile, 1 = layout axis */
+	{ MODKEY|SUPKEY,              XK_Tab,        rotatelayoutaxis,       {.i = -2 } },   /* flextile, 2 = master axis */
+	{ MODKEY|SUPKEY|ShiftMask,    XK_Tab,        rotatelayoutaxis,       {.i = -3 } },   /* flextile, 3 = stack axis */
+	{ MODKEY|SUPKEY|ShiftMask|ControlMask,     XK_Tab,        rotatelayoutaxis,       {.i = -4 } },   /* flextile, 4 = secondary stack axis */
 	{ MODKEY|ControlMask,           XK_Return,     mirrorlayout,           {0} },          /* flextile, flip master and stack areas */
 	{ MODKEY,                       XK_space,      setlayout,              {0} },
 	{ MODKEY|ShiftMask,             XK_space,      togglefloating,         {0} },
