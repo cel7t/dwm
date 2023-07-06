@@ -318,9 +318,9 @@ static int getrootptr(int *x, int *y);
 static long getstate(Window w);
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, int focused);
-static void grabkeys(void);
+static void grabdefkeys(void);
 static void incnmaster(const Arg *arg);
-static void keypress(XEvent *e);
+static void keydefpress(XEvent *e);
 static void killclient(const Arg *arg);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
@@ -641,6 +641,7 @@ buttonpress(XEvent *e)
 			buttons[i].func(
 				(
 					click == ClkTagBar
+					|| click == ClkWinTitle
 				) && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg
 			);
 		}
@@ -1265,16 +1266,16 @@ focusstack(const Arg *arg)
 	if (!selmon->sel || (selmon->sel->isfullscreen && lockfullscreen))
 		return;
 	if (arg->i > 0) {
-		for (c = selmon->sel->next; c && !ISVISIBLE(c); c = c->next);
+		for (c = selmon->sel->next; c && (!ISVISIBLE(c) || (arg->i == 1 && HIDDEN(c))); c = c->next);
 		if (!c)
-			for (c = selmon->clients; c && !ISVISIBLE(c); c = c->next);
+			for (c = selmon->clients; c && (!ISVISIBLE(c) || (arg->i == 1 && HIDDEN(c))); c = c->next);
 	} else {
 		for (i = selmon->clients; i != selmon->sel; i = i->next)
-			if (ISVISIBLE(i))
+			if (ISVISIBLE(i) && !(arg->i == -1 && HIDDEN(i)))
 				c = i;
 		if (!c)
 			for (; i; i = i->next)
-				if (ISVISIBLE(i))
+				if (ISVISIBLE(i) && !(arg->i == -1 && HIDDEN(i)))
 					c = i;
 	}
 	if (c) {
@@ -1380,7 +1381,7 @@ grabbuttons(Client *c, int focused)
 }
 
 void
-grabkeys(void)
+grabdefkeys(void)
 {
 	updatenumlockmask();
 	{
@@ -1427,7 +1428,7 @@ isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info)
 #endif /* XINERAMA */
 
 void
-keypress(XEvent *e)
+keydefpress(XEvent *e)
 {
 	unsigned int i;
 	int keysyms_return;
@@ -1532,13 +1533,15 @@ manage(Window w, XWindowAttributes *wa)
 		(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 
-	setclientstate(c, NormalState);
+	if (!HIDDEN(c))
+		setclientstate(c, NormalState);
 	if (c->mon == selmon)
 		unfocus(selmon->sel, 0, c);
 	c->mon->sel = c;
 	if (!(term && swallow(term, c))) {
 		arrange(c->mon);
-		XMapWindow(dpy, c->win);
+		if (!HIDDEN(c))
+			XMapWindow(dpy, c->win);
 	}
 	focus(NULL);
 
@@ -1666,7 +1669,7 @@ movemouse(const Arg *arg)
 Client *
 nexttiled(Client *c)
 {
-	for (; c && (c->isfloating || !ISVISIBLE(c)); c = c->next);
+	for (; c && (c->isfloating || !ISVISIBLE(c) || HIDDEN(c)); c = c->next);
 	return c;
 }
 

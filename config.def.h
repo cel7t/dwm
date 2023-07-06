@@ -39,6 +39,7 @@ static const unsigned int maxhtab          = 200;  /* tab menu height */
 static int tagindicatortype              = INDICATOR_TOP_LEFT_SQUARE;
 static int tiledindicatortype            = INDICATOR_NONE;
 static int floatindicatortype            = INDICATOR_TOP_LEFT_SQUARE;
+static void (*bartabmonfns[])(Monitor *) = { monocle /* , customlayoutfn */ };
 static const char *fonts[]               = { "Terminus:style=Bold:size=12", "Noto Color Emoji:pixelsize=16"};
 static const char dmenufont[]            = "Terminus:style=Bold:size=12";
 
@@ -139,6 +140,18 @@ static char tagicons[][NUMTAGS][MAX_TAGLEN] =
 };
 
 
+/* grid of tags */
+#define SWITCHTAG_UP                1 << 0
+#define SWITCHTAG_DOWN              1 << 1
+#define SWITCHTAG_LEFT              1 << 2
+#define SWITCHTAG_RIGHT             1 << 3
+#define SWITCHTAG_TOGGLETAG         1 << 4
+#define SWITCHTAG_TAG               1 << 5
+#define SWITCHTAG_VIEW              1 << 6
+#define SWITCHTAG_TOGGLEVIEW        1 << 7
+
+static const int tagrows = 2;
+
 /* There are two options when it comes to per-client rules:
  *  - a typical struct table or
  *  - using the RULE macro
@@ -173,6 +186,7 @@ static const Rule rules[] = {
   RULE(.class = "mpv", .isfloating = 1)
   RULE(.class = "Tor Browser", .isfloating = 1)
   RULE(.title = "dclock", .isfloating = 1)
+  RULE(.class = "st", .isterminal = 1)
   RULE(.class = "URxvt", .isterminal = 1)
   RULE(.class = "XTerm", .isterminal = 1)
 };
@@ -193,11 +207,12 @@ static const Rule rules[] = {
  */
 static const BarRule barrules[] = {
 	/* monitor   bar    alignment         widthfunc                 drawfunc                clickfunc                hoverfunc                name */
-	{ -1,        0,     BAR_ALIGN_LEFT,   width_tags,               draw_tags,              click_tags,              hover_tags,              "tags" },
-	{ statusmon, 0,     BAR_ALIGN_RIGHT,  width_status2d,           draw_status2d,          click_statuscmd,         NULL,                    "status2d" },
-	{ -1,        0,     BAR_ALIGN_LEFT,   width_ltsymbol,           draw_ltsymbol,          click_ltsymbol,          NULL,                    "layout" },
-	{  0,        0,     BAR_ALIGN_RIGHT,  width_systray,            draw_systray,           click_systray,           NULL,                    "systray" },
-	{ -1,        0,     BAR_ALIGN_NONE,   width_wintitle,           draw_wintitle,          click_wintitle,          NULL,                    "wintitle" },
+	 { -1,        0,     BAR_ALIGN_LEFT,   width_tags,               draw_tags,              click_tags,              hover_tags,              "tags" },
+	 { -1,        0,     BAR_ALIGN_LEFT,   width_ltsymbol,           draw_ltsymbol,          click_ltsymbol,          NULL,                    "layout" },
+	 { -1,        0,     BAR_ALIGN_LEFT,   width_taggrid,            draw_taggrid,           click_taggrid,           NULL,                    "taggrid" },
+	 { statusmon, 0,     BAR_ALIGN_RIGHT,  width_status2d,           draw_status2d,          click_statuscmd,         NULL,                    "status2d" },
+	 {  0,        0,     BAR_ALIGN_RIGHT,  width_systray,            draw_systray,           click_systray,           NULL,                    "systray" },
+	 { -1,        0,     BAR_ALIGN_NONE,   width_bartabgroups,       draw_bartabgroups,      click_bartabgroups,      NULL,                    "bartabgroups" },
 };
 
 /* layout(s) */
@@ -207,13 +222,13 @@ static const int nstack      = 0;    /* number of clients in primary stack area 
 static const int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
-
+#define BARTAB_BORDERS 0       // 0 = off, 1 = on
 
 static const Layout layouts[] = {
 	/* symbol     arrange function, { nmaster, nstack, layout, master axis, stack axis, secondary stack axis, symbol func } */
 	{ "[]=",      flextile,         { -1, -1, SPLIT_VERTICAL, TOP_TO_BOTTOM, TOP_TO_BOTTOM, 0, NULL } }, // default tile layout
  	{ "><>",      NULL,             {0} },    /* no layout function means floating behavior */
-	{ "[M]",      flextile,         { -1, -1, NO_SPLIT, MONOCLE, MONOCLE, 0, NULL } }, // monocle
+	{ "[M]",      flextile,         { -1, -1, NO_SPLIT, MONOCLE, MONOCLE, 0, monoclesymbols } }, // monocle
 	{ "|||",      flextile,         { -1, -1, SPLIT_VERTICAL, LEFT_TO_RIGHT, TOP_TO_BOTTOM, 0, NULL } }, // columns (col) layout
 	{ ">M>",      flextile,         { -1, -1, FLOATING_MASTER, LEFT_TO_RIGHT, LEFT_TO_RIGHT, 0, NULL } }, // floating master
 	{ "[D]",      flextile,         { -1, -1, SPLIT_VERTICAL, TOP_TO_BOTTOM, MONOCLE, 0, NULL } }, // deck
@@ -260,10 +275,12 @@ static const char *dmenucmd[] = {
 };
 
 static const char *roficmd[] = { "rofi", "-show", "combi", NULL };
+static const char *rofiecmd[] = { "rofi", "-modi", "emoji", "-show", "emoji", NULL };
 static const char *jgmenucmd[] = { "jgmenu_run", NULL };
 static const char *lockcmd[] = { "betterlockscreen", "-l", NULL };
 static const char *termbcmd[]  = { "xterm", NULL };
 static const char *termcmd[]  = { "urxvt", NULL };
+static const char *termacmd[]  = { "st", NULL };
 static const char *browscmd[]  = { "librewolf", NULL };
 static const char *emacscmd[]  = { "emacsclient", "-c", "-s", "/home/sixtyfour/.emacs.d/server/server", NULL };
 static const char *dolphincmd[]  = { "dolphin", NULL };
@@ -290,12 +307,16 @@ static const char *statuscmd[] = { "/bin/sh", "-c", NULL, NULL };
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
 
+	{ SUPKEY,                       XK_Escape,     setkeymode,             {.ui = COMMANDMODE} },
   { SUPKEY|ShiftMask,             XK_l,          spawn,                  {.v = lockcmd } },
   { MODKEY|ShiftMask,             XK_p,          spawn,                  {.v = dmenucmd } },
   { MODKEY|ShiftMask,             XK_s,          spawn,                  {.v = screenshotcmd } },
   { SUPKEY,                       XK_p,          spawn,                  {.v = dmenucmd } },
   { MODKEY,                       XK_p,          spawn,                  {.v = roficmd } },
+  { SUPKEY,                       XK_period,     spawn,                  {.v = rofiecmd } },
   { MODKEY|ShiftMask,             XK_Return,     spawn,                  {.v = termcmd } },
+  { SUPKEY|ShiftMask,             XK_Return,     spawn,                  {.v = termbcmd } },
+  { MODKEY|SUPKEY|ShiftMask,      XK_Return,     spawn,                  {.v = termacmd } },
 	{ MODKEY|ControlMask,           XK_c,	         spawn,                  {.v = browscmd } },
 	{ MODKEY|ControlMask,           XK_e,	         spawn,                  {.v = emacscmd } },
 	{ MODKEY|ControlMask,           XK_d,	         spawn,                  {.v = dolphincmd } },
@@ -314,14 +335,14 @@ static const Key keys[] = {
 	{ MODKEY|ControlMask,           XK_u,          incnstack,              {.i = -1 } },
 	{ MODKEY,                       XK_h,          setmfact,               {.f = -0.05} },
 	{ MODKEY,                       XK_l,          setmfact,               {.f = +0.05} },
-	{ MODKEY,              XK_Down,       moveresize,             {.v = "0x 25y 0w 0h" } },
-	{ MODKEY,              XK_Up,         moveresize,             {.v = "0x -25y 0w 0h" } },
-	{ MODKEY,              XK_Right,      moveresize,             {.v = "25x 0y 0w 0h" } },
-	{ MODKEY,              XK_Left,       moveresize,             {.v = "-25x 0y 0w 0h" } },
-	{ MODKEY|ShiftMask,    XK_Down,       moveresize,             {.v = "0x 0y 0w 25h" } },
-	{ MODKEY|ShiftMask,    XK_Up,         moveresize,             {.v = "0x 0y 0w -25h" } },
-	{ MODKEY|ShiftMask,    XK_Right,      moveresize,             {.v = "0x 0y 25w 0h" } },
-	{ MODKEY|ShiftMask,    XK_Left,       moveresize,             {.v = "0x 0y -25w 0h" } },
+	{ SUPKEY,                       XK_Down,       moveresize,             {.v = "0x 25y 0w 0h" } },
+	{ SUPKEY,                       XK_Up,         moveresize,             {.v = "0x -25y 0w 0h" } },
+	{ SUPKEY,                       XK_Right,      moveresize,             {.v = "25x 0y 0w 0h" } },
+	{ SUPKEY,                       XK_Left,       moveresize,             {.v = "-25x 0y 0w 0h" } },
+	{ SUPKEY|ShiftMask,             XK_Down,       moveresize,             {.v = "0x 0y 0w 25h" } },
+	{ SUPKEY|ShiftMask,             XK_Up,         moveresize,             {.v = "0x 0y 0w -25h" } },
+	{ SUPKEY|ShiftMask,             XK_Right,      moveresize,             {.v = "0x 0y 25w 0h" } },
+	{ SUPKEY|ShiftMask,             XK_Left,       moveresize,             {.v = "0x 0y -25w 0h" } },
 	{ MODKEY|ShiftMask,             XK_j,          movestack,              {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_k,          movestack,              {.i = -1 } },
 	{ SUPKEY,                       XK_Return,     zoom,                   {0} },
@@ -341,7 +362,8 @@ static const Key keys[] = {
 	{ MODKEY|Mod4Mask|ShiftMask,    XK_9,          incrovgaps,             {.i = -1 } },
 	{ MODKEY|Mod4Mask,              XK_0,          togglegaps,             {0} },
 	{ MODKEY|Mod4Mask|ShiftMask,    XK_0,          defaultgaps,            {0} },
-	{ Mod1Mask,                     XK_Tab,        alttabstart,            {0} },
+	{ MODKEY,                       XK_Tab,        alttabstart,            {0} },
+	{ MODKEY|ControlMask,           XK_z,          showhideclient,         {0} },
 	{ MODKEY|ShiftMask,             XK_c,          killclient,             {0} },
 	{ MODKEY|ShiftMask,             XK_q,          quit,                   {0} },
 	{ MODKEY|ShiftMask,             XK_F2,         xrdb,                   {.v = NULL } },
@@ -359,7 +381,7 @@ static const Key keys[] = {
 	{ MODKEY|ControlMask,           XK_Return,     mirrorlayout,           {0} },          /* flextile, flip master and stack areas */
 	{ MODKEY,                       XK_space,      setlayout,              {0} },
 	{ MODKEY|ShiftMask,             XK_space,      togglefloating,         {0} },
-	{ MODKEY|ShiftMask,             XK_m,          fullscreen,             {0} },
+	{ MODKEY|ShiftMask,             XK_f,          togglefullscreen,       {0} },
 	{ MODKEY,                       XK_0,          view,                   {.ui = ~0 } },
 	{ MODKEY|ShiftMask,             XK_0,          tag,                    {.ui = ~0 } },
 	{ MODKEY,                       XK_comma,      focusmon,               {.i = -1 } },
@@ -367,6 +389,14 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_comma,      tagmon,                 {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period,     tagmon,                 {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_n,          nametag,                {0} },
+	{ MODKEY|ControlMask,           XK_Up,         switchtag,              { .ui = SWITCHTAG_UP    | SWITCHTAG_VIEW } },
+	{ MODKEY|ControlMask,           XK_Down,       switchtag,              { .ui = SWITCHTAG_DOWN  | SWITCHTAG_VIEW } },
+	{ MODKEY|ControlMask,           XK_Right,      switchtag,              { .ui = SWITCHTAG_RIGHT | SWITCHTAG_VIEW } },
+	{ MODKEY|ControlMask,           XK_Left,       switchtag,              { .ui = SWITCHTAG_LEFT  | SWITCHTAG_VIEW } },
+	{ MODKEY|SUPKEY,                XK_Up,         switchtag,              { .ui = SWITCHTAG_UP    | SWITCHTAG_TAG | SWITCHTAG_VIEW } },
+	{ MODKEY|SUPKEY,              XK_Down,       switchtag,              { .ui = SWITCHTAG_DOWN  | SWITCHTAG_TAG | SWITCHTAG_VIEW } },
+	{ MODKEY|SUPKEY,              XK_Right,      switchtag,              { .ui = SWITCHTAG_RIGHT | SWITCHTAG_TAG | SWITCHTAG_VIEW } },
+	{ MODKEY|SUPKEY,              XK_Left,       switchtag,              { .ui = SWITCHTAG_LEFT  | SWITCHTAG_TAG | SWITCHTAG_VIEW } },
 	TAGKEYS(                        XK_1,                                  0)
 	TAGKEYS(                        XK_2,                                  1)
 	TAGKEYS(                        XK_3,                                  2)
@@ -378,6 +408,68 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_9,                                  8)
 };
 
+static const Key cmdkeys[] = {
+	/* modifier                    keys                     function         argument */
+	{ 0,                           XK_Escape,               clearcmd,        {0} },
+	{ ControlMask,                 XK_c,                    clearcmd,        {0} },
+	{ 0,                           XK_i,                    setkeymode,      {.ui = INSERTMODE} },
+};
+
+static const Command commands[] = {
+	/* modifier (4 keys)                          keysyms (4 keys)                                function         argument */
+//	{ {ControlMask, ShiftMask,  0,         0},    {XK_w,      XK_h,     0,         0},            setlayout,       {.v = &layouts[0]} },
+//	{ {ControlMask, 0,          0,         0},    {XK_w,      XK_o,     0,         0},            setlayout,       {.v = &layouts[2]} },
+//	{ {ControlMask, ShiftMask,  0,         0},    {XK_w,      XK_o,     0,         0},            onlyclient,      {0} },
+//	{ {ControlMask, 0,          0,         0},    {XK_w,      XK_v,     0,         0},            setlayout,       {.v = &layouts[0]} },
+//	{ {ControlMask, 0,          0,         0},    {XK_w,      XK_less,  0,         0},            setmfact,        {.f = -0.05} },
+//	{ {ControlMask, ShiftMask,  0,         0},    {XK_w,      XK_less,  0,         0},            setmfact,        {.f = +0.05} },
+//	{ {ControlMask, ShiftMask,  0,         0},    {XK_w,      XK_0,     0,         0},            setmfact,        {.f = +1.50} },
+//	{ {ShiftMask,   0,          0,         0},    {XK_period, XK_e,     0,         0},            spawn,           {.v = dmenucmd} },
+//	{ {ShiftMask,   0,          0,         0},    {XK_period, XK_o,     0,         0},            spawn,           {.v = dmenucmd} },
+//	{ {ShiftMask,   0,          0,         0},    {XK_period, XK_q,     XK_Return, 0},            quit,            {0} },
+//	{ {ShiftMask,   0,          0,         0},    {XK_period, XK_b,     XK_d,      XK_Return},    killclient,      {0} },
+//	{ {ShiftMask,   0,          0,         0},    {XK_period, XK_b,     XK_n,      XK_Return},    focusstack,      {.i = +1} },
+//	{ {ShiftMask,   0,          ShiftMask, 0},    {XK_period, XK_b,     XK_n,      XK_Return},    focusstack,      {.i = -1} },
+	{ {0,           0,          0,         0},    {XK_Return, 0,     0,     0},    spawn,            {.v = termcmd} },
+	{ {0,           0,          0,         0},    {XK_Return, 0,     0,     0},    spawn,            {.v = termcmd} },
+	{ {0,           0,          0,         0},    {XK_p,      0,     0,     0},    spawn,            {.v = roficmd} },
+	{ {0,           0,          0,         0},    {XK_e,      0,     0,     0},    spawn,            {.v = emacscmd} },
+	{ {0,           0,          0,         0},    {XK_b,      0,     0,     0},    spawn,            {.v = browscmd} },
+	{ {0,           0,          0,         0},    {XK_t,      0,     0,     0},    setlayout,        {.v = &layouts[0]} },
+	{ {0,           0,          0,         0},    {XK_f,      0,     0,     0},    setlayout,        {.v = &layouts[1]} },
+	{ {0,           0,          0,         0},    {XK_m,      0,     0,     0},    setlayout,        {.v = &layouts[2]} },
+	{ {0,           0,          0,         0},    {XK_c,      XK_c,  0,     0},    killclient,             {0} },
+	{ {0,           0,          0,         0},    {XK_Down,   0,     0,     0},    moveresize,       {.v = "0x 25y 0w 0h" } },
+	{ {0,           0,          0,         0},    {XK_Up,     0,     0,     0},    moveresize,       {.v = "0x -25y 0w 0h" } },
+	{ {0,           0,          0,         0},    {XK_Right,  0,     0,     0},    moveresize,       {.v = "25x 0y 0w 0h" } },
+	{ {0,           0,          0,         0},    {XK_Left,   0,     0,     0},    moveresize,       {.v = "-25x 0y 0w 0h" } },
+	{ {ShiftMask,   0,          0,         0},    {XK_Down,   0,     0,     0},    moveresize,       {.v = "0x 0y 0w 25h" } },
+	{ {ShiftMask,   0,          0,         0},    {XK_Up,     0,     0,     0},    moveresize,       {.v = "0x 0y 0w -25h" } },
+	{ {ShiftMask,   0,          0,         0},    {XK_Right,  0,     0,     0},    moveresize,       {.v = "0x 0y 25w 0h" } },
+	{ {ShiftMask,   0,          0,         0},    {XK_Left,   0,     0,     0},    moveresize,       {.v = "0x 0y -25w 0h" } },
+	{ {0,           0,          0,         0},    {XK_j,      0,     0,     0},    focusstack,             {.i = +1 } },
+	{ {0,           0,          0,         0},    {XK_k,      0,     0,     0},    focusstack,             {.i = -1 } },
+	{ {ShiftMask,   0,          0,         0},    {XK_j,      0,     0,     0},    movestack,              {.i = +1 } },
+	{ {ShiftMask,   0,          0,         0},    {XK_k,      0,     0,     0},    movestack,              {.i = -1 } },
+	{ {0,           0,          0,         0},    {XK_1,      0,     0,     0},    comboview,          {.ui = 1 << 0} },
+	{ {0,           0,          0,         0},    {XK_2,      0,     0,     0},    comboview,          {.ui = 1 << 1} },
+	{ {0,           0,          0,         0},    {XK_3,      0,     0,     0},    comboview,          {.ui = 1 << 2} },
+	{ {0,           0,          0,         0},    {XK_4,      0,     0,     0},    comboview,          {.ui = 1 << 3} },
+	{ {0,           0,          0,         0},    {XK_5,      0,     0,     0},    comboview,          {.ui = 1 << 4} },
+	{ {0,           0,          0,         0},    {XK_6,      0,     0,     0},    comboview,          {.ui = 1 << 5} },
+	{ {0,           0,          0,         0},    {XK_7,      0,     0,     0},    comboview,          {.ui = 1 << 6} },
+	{ {0,           0,          0,         0},    {XK_8,      0,     0,     0},    comboview,          {.ui = 1 << 7} },
+	{ {0,           0,          0,         0},    {XK_9,      0,     0,     0},    comboview,          {.ui = 1 << 8} },
+	{ {ShiftMask,   0,          0,         0},    {XK_1,      0,     0,     0},    combotag,           {.ui = 1 << 0} },
+	{ {ShiftMask,   0,          0,         0},    {XK_2,      0,     0,     0},    combotag,           {.ui = 1 << 1} },
+	{ {ShiftMask,   0,          0,         0},    {XK_3,      0,     0,     0},    combotag,           {.ui = 1 << 2} },
+	{ {ShiftMask,   0,          0,         0},    {XK_4,      0,     0,     0},    combotag,           {.ui = 1 << 3} },
+	{ {ShiftMask,   0,          0,         0},    {XK_5,      0,     0,     0},    combotag,           {.ui = 1 << 4} },
+	{ {ShiftMask,   0,          0,         0},    {XK_6,      0,     0,     0},    combotag,           {.ui = 1 << 5} },
+	{ {ShiftMask,   0,          0,         0},    {XK_7,      0,     0,     0},    combotag,           {.ui = 1 << 6} },
+	{ {ShiftMask,   0,          0,         0},    {XK_8,      0,     0,     0},    combotag,           {.ui = 1 << 7} },
+	{ {ShiftMask,   0,          0,         0},    {XK_9,      0,     0,     0},    combotag,           {.ui = 1 << 8} },
+};
 
 /* button definitions */
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
@@ -385,6 +477,8 @@ static const Button buttons[] = {
 	/* click                event mask           button          function        argument */
 	{ ClkLtSymbol,          0,                   Button1,        setlayout,      {0} },
 	{ ClkLtSymbol,          0,                   Button3,        setlayout,      {.v = &layouts[2]} },
+	{ ClkWinTitle,          0,                   Button1,        togglewin,      {0} },
+	{ ClkWinTitle,          0,                   Button3,        showhideclient, {0} },
 	{ ClkWinTitle,          0,                   Button2,        zoom,           {0} },
 	{ ClkStatusText,        0,                   Button1,        spawn,          {.v = statuscmd } },
 	{ ClkStatusText,        0,                   Button2,        spawn,          {.v = statuscmd } },
